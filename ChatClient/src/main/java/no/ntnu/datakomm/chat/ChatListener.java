@@ -60,4 +60,5 @@ public interface ChatListener {
      */
     public void onCommandError(String errMsg);
 
+    public void onJoke(String jokeMessage);
 }
