@@ -36,4 +36,8 @@ public class EmptyChatListener implements ChatListener {
     @Override
     public void onDisconnect() {
     }
+
+    @Override
+    public void onJoke(String jokeMsg) {
+    }
 }

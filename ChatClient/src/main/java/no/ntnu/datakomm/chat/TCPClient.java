@@ -1,17 +1,17 @@
 package no.ntnu.datakomm.chat;
 
-import java.io.*;
+import java.io.*;                                         //Importer listen for Socket, LinkedList, og List library
 import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
 
 public class TCPClient {
-    private PrintWriter toServer;
+    private PrintWriter toServer;                         //Private verdier for Objekter PrintWrite som heter toServer;
     private BufferedReader fromServer;
     private Socket connection;
 
     // Hint: if you want to store a message for the last error, store it here
-    private String lastError = null;
+    private String lastError = null;                      //En egen String som har verdier null eller 0. Det er et objekt av typen String
 
     private final List<no.ntnu.datakomm.chat.ChatListener> listeners = new LinkedList<>();
 
@@ -26,7 +26,7 @@ public class TCPClient {
         // TODO Step 1: implement this method
         // Hint: Remember to process all exceptions and return false on error
         // Hint: Remember to set up all the necessary input/output stream variables
-        if(connection == null) {
+        if (connection == null) {                                                // Vist det ikke er en connection så gjør en connection, vist det ikke blir etter det -
             try {
                 connection = new Socket(host, port);
                 OutputStream out = connection.getOutputStream();
@@ -52,15 +52,20 @@ public class TCPClient {
      * in the process of being closed. with "synchronized" keyword we make sure
      * that no two threads call this method in parallel.
      */
-    public synchronized void disconnect() throws IOException {
+    public synchronized void disconnect() {
         // TODO Step 4: implement this method
         // Hint: remember to check if connection is active
-        if(isConnectionActive()){
-            this.onDisconnect();
-            connection.close();
-            connection = null;
-        }
-        else{
+        if (isConnectionActive()) {
+
+            try {
+                connection.close();
+                connection = null;
+                this.onDisconnect();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        } else {
 
         }
     }
@@ -81,14 +86,19 @@ public class TCPClient {
     private boolean sendCommand(String cmd) {
         // TODO Step 2: Implement this method
         // Hint: Remember to check if connection is active
-        if (isConnectionActive()){
-            toServer.println(cmd);
-            return true;
-        }
-        else{
-            return false;
-        }
+        boolean attempt = false;
 
+        if (isConnectionActive()) {
+            if (cmd.equalsIgnoreCase("msg -/joke")) {
+                attempt = true;
+                String jokeResponse = "Sophus har god selvtilit og viser ikke usikkerhet i værdagen lmao";
+                onJoke(jokeResponse);
+            } else {
+                toServer.println(cmd);
+                attempt = true;
+            }
+        }
+        return attempt;
     }
 
     /**
@@ -101,14 +111,18 @@ public class TCPClient {
         // TODO Step 2: implement this method
         // Hint: Reuse sendCommand() method
         // Hint: update lastError if you want to store the reason for the error.
-        if(isConnectionActive()){
+        if (isConnectionActive()) {
             sendCommand("msg " + message);
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
+
+    // public sendRandomJoke(String message){
+       /*  if (sendCommand("msg"+ message) == "joke\n"){
+            System.out.println("NTNU never misses the approriate day for exam returns"); and more
+        }*/
 
     /**
      * Send a login request to the chat server.
@@ -118,10 +132,20 @@ public class TCPClient {
     public void tryLogin(String username) {
         // TODO Step 3: implement this method
         // Hint: Reuse sendCommand() method
-        if(isConnectionActive()){
-            sendCommand("login "+ username);
+        if (isConnectionActive()) {
+            sendCommand("login " + username);
+        } else {
+
         }
-        else {
+
+    }
+
+    public void tryJoke(String joke) {
+        // TODO Step 3: implement this method
+        // Hint: Reuse sendCommand() method
+        if (isConnectionActive()) {
+            sendCommand("joke " + joke);
+        } else {
 
         }
 
@@ -137,9 +161,7 @@ public class TCPClient {
         // client and server exchange for user listing.
         if (isConnectionActive()) {
             sendCommand("users ");
-        }
-        else
-        {
+        } else {
 
         }
 
@@ -156,11 +178,10 @@ public class TCPClient {
         // TODO Step 6: Implement this method
         // Hint: Reuse sendCommand() method
         // Hint: update lastError if you want to store the reason for the error.
-        if (isConnectionActive()){
+        if (isConnectionActive()) {
             sendCommand("privmsg " + recipient + " " + message);
             return true;
-        }
-        else{
+        } else {
             return false;
         }
 
@@ -173,7 +194,7 @@ public class TCPClient {
     public void askSupportedCommands() {
         // TODO Step 8: Implement this method
         // Hint: Reuse sendCommand() method
-        if(isConnectionActive()) {
+        if (isConnectionActive()) {
             sendCommand("help");
         }
     }
@@ -184,16 +205,16 @@ public class TCPClient {
      *
      * @return one line of text (one command) received from the server
      */
-    private String waitServerResponse() throws IOException {
+    private String waitServerResponse() {
         // TODO Step 3: Implement this method
         // TODO Step 4: If you get I/O Exception or null from the stream, it means that something has gone wrong
         // with the stream and hence the socket. Probably a good idea to close the socket in that case.
         String a = "";
         try {
             a = fromServer.readLine();
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            connection.close();
+            disconnect();
         }
         return a;
     }
@@ -240,37 +261,37 @@ public class TCPClient {
             // Hint: In Step 3 reuse onLoginResult() method
             String[] responseInParts = waitServerResponse().split(" ", 2);
 
-            switch(responseInParts[0]){
+            switch (responseInParts[0]) {
                 case "loginok":
-                    onLoginResult(true,"");
+                    onLoginResult(true, "");
 
                     break;
-                case"loginerr":
-                    onLoginResult(false,responseInParts[1]);
+                case "loginerr":
+                    onLoginResult(false, responseInParts[1]);
                     break;
 
-                case"users":
+                case "users":
                     onUsersList(responseInParts[1].split(" "));
                     break;
 
-                case"privmsg":
-                    String[] a = responseInParts[1].split(" ",2);
+                case "privmsg":
+                    String[] a = responseInParts[1].split(" ", 2);
                     onMsgReceived(true, a[0], a[1]);
                     break;
 
-                case"msg":
-                    String[] b = responseInParts[1].split(" ",2);
-                    onMsgReceived(false, b[0],b[1]);
+                case "msg":
+                    String[] b = responseInParts[1].split(" ", 2);
+                    onMsgReceived(false, b[0], b[1]);
                     break;
-                case"msgerr":
+                case "msgerr":
                     String e = responseInParts[1];
                     onMsgError(e);
                     break;
-                case"cmderr":
+                case "cmderr":
                     String d = responseInParts[1];
                     onCmdError(d);
                     break;
-                case"supported":
+                case "supported":
                     String[] c = responseInParts[1].split(" ");
                     onSupported(c);
                     break;
@@ -320,7 +341,8 @@ public class TCPClient {
     /**
      * Notify listeners that login operation is complete (either with success or
      * failure)
-     *  @param success When true, login successful. When false, it failed
+     *
+     * @param success When true, login successful. When false, it failed
      * @param errMsg  Error message if any
      */
     private void onLoginResult(boolean success, String errMsg) {
@@ -349,7 +371,7 @@ public class TCPClient {
      */
     private void onUsersList(String[] users) {
         // TODO Step 5: Implement this method
-        for(no.ntnu.datakomm.chat.ChatListener l : listeners){
+        for (no.ntnu.datakomm.chat.ChatListener l : listeners) {
             l.onUserList(users);
         }
     }
@@ -390,6 +412,14 @@ public class TCPClient {
         // TODO Step 7: Implement this method
         for (no.ntnu.datakomm.chat.ChatListener n : listeners) {
             n.onCommandError(errMsg);
+        }
+
+    }
+
+    private void onJoke(String jokeMessage) {
+        // TODO Step 7: Implement this method
+        for (no.ntnu.datakomm.chat.ChatListener n : listeners) {
+            n.onJoke(jokeMessage);
         }
 
     }
