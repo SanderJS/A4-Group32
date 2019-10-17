@@ -16,6 +16,7 @@ public class DummyResponseCounter implements ChatListener {
     public int supported = 0;
     public int cmdErr = 0;
     public int disconn = 0;
+    public int joke = 0;
 
     @Override
     public void onLoginResult(boolean success, String errMsg) {
@@ -55,5 +56,8 @@ public class DummyResponseCounter implements ChatListener {
     public void onDisconnect() {
         disconn++;
     }
+
+    @Override
+    public void onJoke(String jokeMsg) {joke++;}
     
 }

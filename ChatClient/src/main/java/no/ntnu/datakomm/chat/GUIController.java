@@ -417,6 +417,15 @@ public class GUIController implements ChatListener {
         });
     }
 
+    @Override
+    public void onJoke(String jokeMessage) {
+        // Shoe error message. Do it on the GUI thread.
+        Platform.runLater(() -> {
+            TextMessage msg = new TextMessage("Batman", false, "Batman: " + jokeMessage);
+            addMsgToGui(true, msg, true);
+        });
+    }
+
     /**
      * This method is called when connection (socket) is closed by the remote
      * end (server).
